@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ambugësa - Hamburguesas en Ensenada 🍔</title>
+    <meta name="description" content="Encuentra los mejores lugares de hamburguesas en Ensenada, Baja California.">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #E63946;
+            --secondary: #F4A261;
+            --accent: #2A9D8F;
+            --background: #FDF6E3;
+            --surface: #FFFFFF;
+            --text-primary: #1D3557;
+            --text-secondary: #6B7280;
+            --shadow: 0 4px 14px rgba(29, 53, 87, 0.1);
+            --shadow-lg: 0 8px 30px rgba(29, 53, 87, 0.15);
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            padding: 12px 16px;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: bold;
+            font-family: Georgia, serif;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .logo span {
+            font-size: 1.5rem;
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px 10px 42px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.2);
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+        }
+
+        .user-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #ff6b6b);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: white;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .logout-btn:hover {
+            color: var(--primary);
+        }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, var(--primary), var(--secondary), #f59e0b);
+            color: white;
+            padding: 32px 16px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-family: Georgia, serif;
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .hero p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+            margin-bottom: 24px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 16px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 1024px) {
+            .main-content {
+                grid-template-columns: 60% 40%;
+            }
+        }
+
+        /* Map */
+        .map-container {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            border: 4px solid white;
+            height: 500px;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .custom-marker {
+            background: #FFD700;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 3px solid white;
+            font-size: 18px;
+            animation: pulse 2s infinite;
+        }
+
+        .custom-marker.active {
+            background: var(--secondary);
+            transform: scale(1.2);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Restaurant List */
+        .restaurant-list {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            height: 500px;
+            overflow-y: auto;
+        }
+
+        .list-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .restaurant-card {
+            background: var(--background);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .restaurant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            border-color: var(--secondary);
+        }
+
+        .restaurant-card.selected {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(244, 162, 97, 0.2);
+        }
+
+        .card-content {
+            display: flex;
+            gap: 12px;
+        }
+
+        .card-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-name {
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .card-rating {
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .card-address {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(230, 57, 70, 0.1), rgba(244, 162, 97, 0.1));
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .price-tag {
+            background: linear-gradient(135deg, rgba(42, 157, 143, 0.1), rgba(42, 157, 143, 0.2));
+            color: var(--accent);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state span {
+            font-size: 3rem;
+        }
+
+        .empty-state p {
+            margin-top: 12px;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media (min-width: 640px) {
+            .modal-overlay {
+                align-items: center;
+                padding: 24px;
+            }
+        }
+
+        .modal {
+            background: var(--background);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            border-radius: 24px 24px 0 0;
+            overflow: hidden;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+        }
+
+        @media (min-width: 640px) {
+            .modal {
+                border-radius: 24px;
+            }
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .modal-body {
+            padding: 24px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-family: Georgia, serif;
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1.25rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: #f3f4f6;
+        }
+
+        .specialty-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .modal-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .info-item span:first-child {
+            font-size: 1rem;
+        }
+
+        .reviews-section {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 24px;
+        }
+
+        .reviews-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .reviews-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .review-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(244, 162, 97, 0.2);
+        }
+
+        .review-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .review-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: white;
+        }
+
+        .review-meta {
+            flex: 1;
+        }
+
+        .review-name {
+            font-weight: 600;
+        }
+
+        .review-date {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .review-text {
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .review-form {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 2px solid rgba(244, 162, 97, 0.3);
+        }
+
+        .review-form-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 1.75rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .star-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .review-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: none;
+            min-height: 100px;
+        }
+
+        .review-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .review-form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        /* Auth Modal */
+        .auth-modal {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .auth-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+        }
+
+        .form-error {
+            color: var(--primary);
+            font-size: 0.85rem;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .auth-form .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 1rem;
+            margin-top: 8px;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-switch a {
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        footer {
+            background: #111827;
+            color: white;
+            padding: 32px 16px;
+            text-align: center;
+            margin-top: 48px;
+        }
+
+        footer p:first-child {
+            font-family: Georgia, serif;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        footer p:nth-child(2) {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        footer p:last-child {
+            color: #6b7280;
+            font-size: 0.8rem;
+            margin-top: 16px;
+        }
+
+        /* Leaflet popup customization */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .leaflet-popup-content {
+            margin: 10px 14px;
+            font-family: inherit;
+        }
+
+        .popup-title {
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .popup-address {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .popup-rating {
+            font-size: 0.85rem;
+        }
+
+        /* Mobile menu button */
+        .mobile-menu-btn {
+            display: none;
+            padding: 10px;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+
+        @media (max-width: 1023px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <a href="#" class="logo"><span>🍔</span> Ambugësa</a>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Buscar hamburguesas..." />
+            </div>
+            <div class="user-area" id="userArea">
+                <button class="btn btn-primary" id="loginBtn">👤 Iniciar</button>
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">📍</button>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <h1>🍔 Hamburguesas en Ensenada 🍔</h1>
+        <p>Encuentra los mejores lugares para comer burger en la ciudad</p>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="totalPlaces">12</div>
+                <div class="stat-label">Lugares</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="totalReviews">4</div>
+                <div class="stat-label">Reseñas</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">4.6</div>
+                <div class="stat-label">Rating promedio</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Map -->
+        <div class="map-container" id="mapContainer">
+            <div id="map"></div>
+        </div>
+
+        <!-- Restaurant List -->
+        <div class="restaurant-list" id="restaurantList">
+            <div class="list-header">📍 Lugares en Ensenada</div>
+            <div id="restaurantCards"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>🍔 Ambugësa</p>
+        <p>Tu guía para las mejores hamburguesas en Ensenada, B.C.</p>
+        <p>© 2025 Ambugësa. Hecho con ❤️ en Ensenada.</p>
+    </footer>
+
+    <!-- Restaurant Modal -->
+    <div class="modal-overlay" id="restaurantModal">
+        <div class="modal">
+            <img class="modal-image" id="modalImage" src="" alt="">
+            <div class="modal-body">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title" id="modalTitle"></h2>
+                        <div id="modalRating" style="font-size: 1.1rem; margin-bottom: 8px;"></div>
+                        <span class="specialty-badge" id="modalSpecialty"></span>
+                    </div>
+                </div>
+                <p class="modal-description" id="modalDescription"></p>
+                <div class="info-row">
+                    <div class="info-item">
+                        <span>📍</span>
+                        <span id="modalAddress"></span>
+                    </div>
+                    <div class="info-item">
+                        <span>🕐</span>
+                        <span id="modalHours"></span>
+                    </div>
+                    <div class="info-item">
+                        <span>💰</span>
+                        <span id="modalPrice"></span>
+                    </div>
+                </div>
+                <div class="reviews-section">
+                    <div class="reviews-header">
+                        <h3 class="reviews-title">Reseñas</h3>
+                        <button class="btn btn-primary" id="addReviewBtn">✏️ Escribir reseña</button>
+                    </div>
+                    <div id="reviewForm" class="review-form hidden">
+                        <p class="review-form-title">¿Cómo estuvo tu burger?</p>
+                        <div class="star-rating" id="reviewStars">
+                            <button class="star-btn" data-rating="1">⭐</button>
+                            <button class="star-btn" data-rating="2">⭐</button>
+                            <button class="star-btn" data-rating="3">⭐</button>
+                            <button class="star-btn" data-rating="4">⭐</button>
+                            <button class="star-btn" data-rating="5">⭐</button>
+                        </div>
+                        <textarea class="review-textarea" id="reviewText" placeholder="Cuéntanos tu experiencia..."></textarea>
+                        <div class="review-form-actions">
+                            <button class="btn btn-secondary" id="cancelReview">Cancelar</button>
+                            <button class="btn btn-primary" id="submitReview">Publicar 🍔</button>
+                        </div>
+                    </div>
+                    <div id="reviewsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="auth-modal">
+            <div class="auth-header">
+                <h2 class="auth-title" id="authTitle">Iniciar Sesión</h2>
+                <button class="modal-close" id="closeAuthModal">✕</button>
+            </div>
+            <form class="auth-form" id="authForm">
+                <div class="form-group hidden" id="nameGroup">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" class="form-input" id="authName" placeholder="Tu nombre">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="authEmail" placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contraseña</label>
+                    <input type="password" class="form-input" id="authPassword" placeholder="••••••••">
+                </div>
+                <p class="form-error" id="authError"></p>
+                <button type="submit" class="btn btn-primary" id="authSubmit">Entrar</button>
+            </form>
+            <p class="auth-switch">
+                <span id="authSwitchText">¿No tienes cuenta?</span>
+                <a id="authSwitchLink">Regístrate</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // ============ DATA ============
+        const restaurants = [
+            {
+                id: "1",
+                name: "La Casa de la Hamburguesa",
+                address: "Av. Ruiz y 3ra, Centro, Ensenada",
+                description: "Hamburguesas artesanales con ingredientes locales. La especialidad es la 'Ruiz' con queso Oaxaca y salsa de aguacate.",
+                rating: 4.8,
+                reviewCount: 127,
+                images: ["https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800"],
+                coordinates: [31.8614, -116.5975],
+                specialty: "Burgers artesanales",
+                priceRange: "$$",
+                hours: "12:00 - 22:00"
+            },
+            {
+                id: "2",
+                name: "El Burgos",
+                address: "Calle Primera #450, Zona Centro",
+                description: "Tradición de más de 30 años. Hamburguesas simples pero perfectas. La salsa secreta te va a enamorar.",
+                rating: 4.6,
+                reviewCount: 89,
+                images: ["https://images.unsplash.com/photo-1550547660-d9450f859349?w=800"],
+                coordinates: [31.8589, -116.5962],
+                specialty: "Hamburguesa clásica",
+                priceRange: "$",
+                hours: "10:00 - 20:00"
+            },
+            {
+                id: "3",
+                name: "Madburger",
+                address: "Av. Lopez Mateos #1200, Chapultepec",
+                description: "Opción moderna con toppings creativos. Prueba la 'Ensenada Stack' con tocino caramelizado y hongos.",
+                rating: 4.7,
+                reviewCount: 156,
+                images: ["https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800"],
+                coordinates: [31.8542, -116.6053],
+                specialty: "Gourmet Burgers",
+                priceRange: "$$$",
+                hours: "13:00 - 23:00"
+            },
+            {
+                id: "4",
+                name: "Las Ahumadoras",
+                address: "Calle 6ta #389, entre Riverol y Floresta",
+                description: "Famosas por sus hamburguesas ahumadas. El aroma se siente desde la calle. Carne braseada por 12 horas.",
+                rating: 4.9,
+                reviewCount: 203,
+                images: ["https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=800"],
+                coordinates: [31.8656, -116.5889],
+                specialty: "Smoked Burger",
+                priceRange: "$$",
+                hours: "14:00 - 21:00"
+            },
+            {
+                id: "5",
+                name: "El Trompo Burgers",
+                address: "Blvd. Lazaro Cardenas #1800, Playa Ensenada",
+                description: "Inspiradas en el trompo de pastor. Hamburguesa con carne al pastor, piña caramelizada y cilantro fresco.",
+                rating: 4.5,
+                reviewCount: 98,
+                images: ["https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=800"],
+                coordinates: [31.8489, -116.6123],
+                specialty: "Al pastor",
+                priceRange: "$$",
+                hours: "12:00 - 22:00"
+            },
+            {
+                id: "6",
+                name: "Hermanos Burger",
+                address: "Calle Novena #650, Zona Este",
+                description: "Dos hermanos, una pasión. Hamburguesas gigantes tipo Chicago con todos los ingredientes.",
+                rating: 4.4,
+                reviewCount: 67,
+                images: ["https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=800"],
+                coordinates: [31.8723, -116.5834],
+                specialty: "Big Burgers",
+                priceRange: "$$",
+                hours: "11:00 - 21:00"
+            },
+            {
+                id: "7",
+                name: "La Cubeta",
+                address: "Av. Aguilera #200, Obrera",
+                description: "Las papas a la francesa más crujientes de Ensenada. Hamburguesas generosas a buen precio.",
+                rating: 4.3,
+                reviewCount: 145,
+                images: ["https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=800"],
+                coordinates: [31.8698, -116.6021],
+                specialty: "Combo especial",
+                priceRange: "$",
+                hours: "10:00 - 20:00"
+            },
+            {
+                id: "8",
+                name: "Burros & Burgers",
+                address: "Calle Primera #789, Centro",
+                description: "Lasagna burger? Qué? Sí, una fusión loca que funciona. Mezcla de cocina italiana con tradición burger.",
+                rating: 4.6,
+                reviewCount: 78,
+                images: ["https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=800"],
+                coordinates: [31.8602, -116.5998],
+                specialty: "Fusión creativa",
+                priceRange: "$$$",
+                hours: "14:00 - 23:00"
+            },
+            {
+                id: "9",
+                name: "El Francés",
+                address: "Calle Segunda #333, Marina",
+                description: "Hamburguesa tipo francesa con croissant en lugar de pan. Quién dijo que no se podía innovar.",
+                rating: 4.7,
+                reviewCount: 112,
+                images: ["https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=800"],
+                coordinates: [31.8567, -116.5901],
+                specialty: "Croissant Burger",
+                priceRange: "$$",
+                hours: "12:00 - 21:00"
+            },
+            {
+                id: "10",
+                name: "La Raza Burgers",
+                address: "Av. Cortes #450, Maneadero",
+                description: "Fuera del centro pero vale la pena el viaje. Hamburguesas de res natural con ingredientes orgánicos.",
+                rating: 4.5,
+                reviewCount: 89,
+                images: ["https://images.unsplash.com/photo-1550317138-10000687a72b?w=800"],
+                coordinates: [31.8412, -116.5756],
+                specialty: "Orgánicas",
+                priceRange: "$$$",
+                hours: "11:00 - 20:00"
+            },
+            {
+                id: "11",
+                name: "Don Bug",
+                address: "Blvd. Rio Zona Rural, Valle de Guadalupe",
+                description: "Hamburguesas junto al viñedo. El maridaje perfecto: burger y vino local. Experiencia única.",
+                rating: 4.8,
+                reviewCount: 167,
+                images: ["https://images.unsplash.com/photo-1520072959219-c595dc870360?w=800"],
+                coordinates: [31.8234, -116.5623],
+                specialty: "Wine & Burger",
+                priceRange: "$$$",
+                hours: "13:00 - 20:00"
+            },
+            {
+                id: "12",
+                name: "Street Burger MX",
+                address: "Calle 7ma #102, Playa Hermosa",
+                description: "Trucks de hamburguesas los viernes y sábados. Sigue su Instagram para encontrarlo. Las mejores locaciones.",
+                rating: 4.4,
+                reviewCount: 234,
+                images: ["https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=800"],
+                coordinates: [31.8501, -116.6189],
+                specialty: "Street Food",
+                priceRange: "$",
+                hours: "18:00 - 23:00 (V,S)"
+            }
+        ];
+
+        const initialReviews = [
+            {
+                id: "r1",
+                restaurantId: "4",
+                userId: "user1",
+                userName: "María González",
+                userAvatar: "👩‍🦰",
+                rating: 5,
+                text: "Las mejores burgers de Ensenada, sin duda. La carne se deshace en la boca y el humo le da un sabor increíble. Las papas también están buenísimas.",
+                photos: [],
+                date: "2025-01-15"
+            },
+            {
+                id: "r2",
+                restaurantId: "11",
+                userId: "user2",
+                userName: "Carlos Mendoza",
+                userAvatar: "👨‍💻",
+                rating: 5,
+                text: "Una experiencia inolvidable. Estar en un viñedo comiendo una burger gourmet es algo que todos deben probar. El vino Tannat va perfecto.",
+                photos: [],
+                date: "2025-01-10"
+            },
+            {
+                id: "r3",
+                restaurantId: "1",
+                userId: "user3",
+                userName: "Laura Torres",
+                userAvatar: "👩‍🎨",
+                rating: 4,
+                text: "Muy buenas burgers, pero la espera fue larga. La 'Ruiz' está increíble, el aguacate fresco le da un toque especial.",
+                photos: [],
+                date: "2025-01-08"
+            },
+            {
+                id: "r4",
+                restaurantId: "3",
+                userId: "user4",
+                userName: "Roberto Sánchez",
+                userAvatar: "👨‍🔧",
+                rating: 5,
+                text: "La Ensenada Stack me voló la cabeza. Los hongos combinados con el tocino es una combinación perfecta.",
+                photos: [],
+                date: "2025-01-05"
+            }
+        ];
+
+        // ============ STATE ============
+        let currentUser = null;
+        let reviews = [...initialReviews];
+        let selectedRestaurant = null;
+        let selectedRating = 5;
+        let isRegisterMode = false;
+        let markers = [];
+        let showOnlyList = false;
+
+        // ============ DOM ELEMENTS ============
+        const map = L.map('map').setView([31.8671, -116.5977], 13);
+        const searchInput = document.getElementById('searchInput');
+        const restaurantCards = document.getElementById('restaurantCards');
+        const restaurantModal = document.getElementById('restaurantModal');
+        const authModal = document.getElementById('authModal');
+        const userArea = document.getElementById('userArea');
+        const loginBtn = document.getElementById('loginBtn');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mapContainer = document.getElementById('mapContainer');
+        const restaurantListEl = document.getElementById('restaurantList');
+
+        // ============ INITIALIZE ============
+        function init() {
+            // Load saved data
+            const savedUser = localStorage.getItem('ambugesa_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                updateUserUI();
+            }
+
+            const savedReviews = localStorage.getItem('ambugesa_reviews');
+            if (savedReviews) {
+                reviews = JSON.parse(savedReviews);
+                updateStats();
+            }
+
+            // Initialize map
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // Create markers
+            createMarkers();
+
+            // Render restaurant cards
+            renderRestaurants(restaurants);
+
+            // Event listeners
+            setupEventListeners();
+        }
+
+        // ============ MAP ============
+        function createMarkers() {
+            // Clear existing markers
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            restaurants.forEach(restaurant => {
+                const icon = L.divIcon({
+                    className: 'custom-marker-icon',
+                    html: `<div class="custom-marker" id="marker-${restaurant.id}">🍔</div>`,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 36]
+                });
+
+                const marker = L.marker(restaurant.coordinates, { icon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div class="popup-title">${restaurant.name}</div>
+                        <div class="popup-address">${restaurant.address}</div>
+                        <div class="popup-rating">⭐ ${restaurant.rating}</div>
+                    `);
+
+                marker.on('click', () => {
+                    selectRestaurant(restaurant);
+                });
+
+                markers.push(marker);
+            });
+        }
+
+        function updateMarkers(filteredRestaurants) {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            filteredRestaurants.forEach(restaurant => {
+                const isSelected = selectedRestaurant && selectedRestaurant.id === restaurant.id;
+                const icon = L.divIcon({
+                    className: 'custom-marker-icon',
+                    html: `<div class="custom-marker ${isSelected ? 'active' : ''}" id="marker-${restaurant.id}">🍔</div>`,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 36]
+                });
+
+                const marker = L.marker(restaurant.coordinates, { icon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div class="popup-title">${restaurant.name}</div>
+                        <div class="popup-address">${restaurant.address}</div>
+                        <div class="popup-rating">⭐ ${restaurant.rating}</div>
+                    `);
+
+                marker.on('click', () => {
+                    selectRestaurant(restaurant);
+                });
+
+                markers.push(marker);
+            });
+        }
+
+        // ============ RESTAURANT CARDS ============
+        function renderRestaurants(restaurantsToRender) {
+            if (restaurantsToRender.length === 0) {
+                restaurantCards.innerHTML = `
+                    <div class="empty-state">
+                        <span>🔍</span>
+                        <p>No encontramos lugares con ese nombre</p>
+                        <button class="btn btn-primary" onclick="clearSearch()" style="margin-top: 12px;">Ver todos</button>
+                    </div>
+                `;
+                return;
+            }
+
+            restaurantCards.innerHTML = restaurantsToRender.map(restaurant => {
+                const isSelected = selectedRestaurant && selectedRestaurant.id === restaurant.id;
+                return `
+                    <div class="restaurant-card ${isSelected ? 'selected' : ''}" data-id="${restaurant.id}">
+                        <div class="card-content">
+                            <img class="card-image" src="${restaurant.images[0]}" alt="${restaurant.name}">
+                            <div class="card-info">
+                                <div class="card-name">${restaurant.name}</div>
+                                <div class="card-rating">${'⭐'.repeat(Math.round(restaurant.rating))} ${restaurant.rating} (${restaurant.reviewCount})</div>
+                                <div class="card-address">${restaurant.address}</div>
+                                <div class="card-tags">
+                                    <span class="tag">${restaurant.specialty}</span>
+                                    <span class="tag price-tag">${restaurant.priceRange}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click listeners
+            document.querySelectorAll('.restaurant-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const id = card.dataset.id;
+                    const restaurant = restaurants.find(r => r.id === id);
+                    if (restaurant) {
+                        selectRestaurant(restaurant);
+                    }
+                });
+            });
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            renderRestaurants(restaurants);
+            updateMarkers(restaurants);
+        }
+
+        // ============ SELECT RESTAURANT ============
+        function selectRestaurant(restaurant) {
+            selectedRestaurant = restaurant;
+            
+            // Update markers
+            updateMarkers(getFilteredRestaurants());
+            
+            // Update cards selection
+            document.querySelectorAll('.restaurant-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.id === restaurant.id);
+            });
+
+            // Show modal
+            showRestaurantModal(restaurant);
+        }
+
+        // ============ RESTAURANT MODAL ============
+        function showRestaurantModal(restaurant) {
+            document.getElementById('modalImage').src = restaurant.images[0];
+            document.getElementById('modalImage').alt = restaurant.name;
+            document.getElementById('modalTitle').textContent = restaurant.name;
+            document.getElementById('modalRating').innerHTML = `${'⭐'.repeat(Math.round(restaurant.rating))} <span style="color: var(--text-secondary)">(${restaurant.reviewCount} reseñas)</span>`;
+            document.getElementById('modalSpecialty').textContent = restaurant.specialty;
+            document.getElementById('modalDescription').textContent = restaurant.description;
+            document.getElementById('modalAddress').textContent = restaurant.address;
+            document.getElementById('modalHours').textContent = restaurant.hours;
+            document.getElementById('modalPrice').textContent = restaurant.priceRange;
+
+            // Update add review button visibility
+            const addReviewBtn = document.getElementById('addReviewBtn');
+            if (currentUser) {
+                addReviewBtn.classList.remove('hidden');
+            } else {
+                addReviewBtn.classList.add('hidden');
+            }
+
+            // Hide review form
+            document.getElementById('reviewForm').classList.add('hidden');
+
+            // Render reviews
+            renderReviews(restaurant.id);
+
+            // Show modal
+            restaurantModal.classList.add('active');
+        }
+
+        function renderReviews(restaurantId) {
+            const restaurantReviews = reviews.filter(r => r.restaurantId === restaurantId);
+            const reviewsList = document.getElementById('reviewsList');
+
+            if (restaurantReviews.length === 0) {
+                reviewsList.innerHTML = `
+                    <div class="empty-state" style="padding: 24px;">
+                        <span>🍔</span>
+                        <p>¡Sé el primero en reseñar este lugar!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            reviewsList.innerHTML = restaurantReviews.map(review => `
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="review-avatar">${review.userAvatar}</div>
+                        <div class="review-meta">
+                            <div class="review-name">${review.userName}</div>
+                            <div class="review-date">${formatDate(review.date)}</div>
+                        </div>
+                        <div>${'⭐'.repeat(review.rating)}</div>
+                    </div>
+                    <p class="review-text">${review.text}</p>
+                </div>
+            `).join('');
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        // ============ AUTH ============
+        function showAuthModal() {
+            authModal.classList.add('active');
+            isRegisterMode = false;
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            document.getElementById('authTitle').textContent = isRegisterMode ? '¡Únete a Ambugësa!' : 'Iniciar Sesión';
+            document.getElementById('nameGroup').classList.toggle('hidden', !isRegisterMode);
+            document.getElementById('authSubmit').textContent = isRegisterMode ? 'Crear cuenta' : 'Entrar';
+            document.getElementById('authSwitchText').textContent = isRegisterMode ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?';
+            document.getElementById('authSwitchLink').textContent = isRegisterMode ? 'Inicia sesión' : 'Regístrate';
+            document.getElementById('authError').textContent = '';
+        }
+
+        function updateUserUI() {
+            if (currentUser) {
+                userArea.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-name">${currentUser.name}</div>
+                        <div class="user-avatar">${currentUser.avatar}</div>
+                        <button class="logout-btn" id="logoutBtn">Salir</button>
+                    </div>
+                `;
+                document.getElementById('logoutBtn').addEventListener('click', logout);
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('ambugesa_user');
+            userArea.innerHTML = `<button class="btn btn-primary" id="loginBtn">👤 Iniciar</button>`;
+            document.getElementById('loginBtn').addEventListener('click', showAuthModal);
+            
+            // Hide add review button if modal is open
+            const addReviewBtn = document.getElementById('addReviewBtn');
+            if (addReviewBtn) {
+                addReviewBtn.classList.add('hidden');
+            }
+        }
+
+        // ============ REVIEWS ============
+        function submitReview() {
+            if (!currentUser || !selectedRestaurant) return;
+
+            const text = document.getElementById('reviewText').value.trim();
+            if (!text) return;
+
+            const newReview = {
+                id: `r_${Date.now()}`,
+                restaurantId: selectedRestaurant.id,
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userAvatar: currentUser.avatar,
+                rating: selectedRating,
+                text: text,
+                photos: [],
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            reviews.unshift(newReview);
+            localStorage.setItem('ambugesa_reviews', JSON.stringify(reviews));
+            
+            // Update UI
+            document.getElementById('reviewText').value = '';
+            document.getElementById('reviewForm').classList.add('hidden');
+            renderReviews(selectedRestaurant.id);
+            updateStats();
+            
+            // Update restaurant card
+            selectedRestaurant.reviewCount++;
+            renderRestaurants(getFilteredRestaurants());
+        }
+
+        function updateStats() {
+            document.getElementById('totalReviews').textContent = reviews.length;
+        }
+
+        // ============ SEARCH ============
+        function getFilteredRestaurants() {
+            const query = searchInput.value.toLowerCase().trim();
+            if (!query) return restaurants;
+
+            return restaurants.filter(r =>
+                r.name.toLowerCase().includes(query) ||
+                r.specialty.toLowerCase().includes(query) ||
+                r.address.toLowerCase().includes(query)
+            );
+        }
+
+        function handleSearch() {
+            const filtered = getFilteredRestaurants();
+            renderRestaurants(filtered);
+            updateMarkers(filtered);
+        }
+
+        // ============ MOBILE ============
+        function toggleMobileList() {
+            showOnlyList = !showOnlyList;
+            if (showOnlyList) {
+                mapContainer.classList.add('hidden');
+                restaurantListEl.classList.remove('hidden');
+                restaurantListEl.style.display = 'block';
+            } else {
+                mapContainer.classList.remove('hidden');
+                if (window.innerWidth < 1024) {
+                    restaurantListEl.classList.add('hidden');
+                }
+            }
+        }
+
+        // ============ EVENT LISTENERS ============
+        function setupEventListeners() {
+            // Search
+            searchInput.addEventListener('input', handleSearch);
+
+            // Login button
+            loginBtn.addEventListener('click', showAuthModal);
+
+            // Mobile menu
+            mobileMenuBtn.addEventListener('click', toggleMobileList);
+
+            // Close restaurant modal
+            restaurantModal.addEventListener('click', (e) => {
+                if (e.target === restaurantModal) {
+                    restaurantModal.classList.remove('active');
+                }
+            });
+
+            // Close auth modal
+            document.getElementById('closeAuthModal').addEventListener('click', () => {
+                authModal.classList.remove('active');
+            });
+
+            authModal.addEventListener('click', (e) => {
+                if (e.target === authModal) {
+                    authModal.classList.remove('active');
+                }
+            });
+
+            // Auth switch
+            document.getElementById('authSwitchLink').addEventListener('click', () => {
+                isRegisterMode = !isRegisterMode;
+                updateAuthUI();
+            });
+
+            // Auth form
+            document.getElementById('authForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('authEmail').value.trim();
+                const password = document.getElementById('authPassword').value;
+                const name = document.getElementById('authName').value.trim();
+
+                if (!email || !password) {
+                    document.getElementById('authError').textContent = 'Completa todos los campos';
+                    return;
+                }
+
+                if (isRegisterMode && !name) {
+                    document.getElementById('authError').textContent = 'Ingresa tu nombre';
+                    return;
+                }
+
+                const avatars = ['👨‍💻', '👩‍🦰', '👨‍🎨', '👩‍🔧', '👨‍🍳', '👩‍💼'];
+                currentUser = {
+                    id: `user_${Date.now()}`,
+                    name: isRegisterMode ? name : email.split('@')[0],
+                    email: email,
+                    avatar: avatars[Math.floor(Math.random() * avatars.length)]
+                };
+
+                localStorage.setItem('ambugesa_user', JSON.stringify(currentUser));
+                updateUserUI();
+                authModal.classList.remove('active');
+
+                // Show add review button if modal is open
+                if (selectedRestaurant) {
+                    document.getElementById('addReviewBtn').classList.remove('hidden');
+                }
+            });
+
+            // Star rating
+            document.querySelectorAll('.star-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedRating = parseInt(btn.dataset.rating);
+                    updateStarDisplay();
+                });
+            });
+
+            // Add review button
+            document.getElementById('addReviewBtn').addEventListener('click', () => {
+                if (!currentUser) {
+                    restaurantModal.classList.remove('active');
+                    showAuthModal();
+                    return;
+                }
+                document.getElementById('reviewForm').classList.toggle('hidden');
+            });
+
+            // Cancel review
+            document.getElementById('cancelReview').addEventListener('click', () => {
+                document.getElementById('reviewForm').classList.add('hidden');
+            });
+
+            // Submit review
+            document.getElementById('submitReview').addEventListener('click', submitReview);
+
+            // Responsive
+            if (window.innerWidth < 1024) {
+                restaurantListEl.classList.add('hidden');
+            }
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 1024) {
+                    mapContainer.classList.remove('hidden');
+                    restaurantListEl.classList.remove('hidden');
+                } else if (!showOnlyList) {
+                    restaurantListEl.classList.add('hidden');
+                }
+            });
+        }
+
+        function updateStarDisplay() {
+            document.querySelectorAll('.star-btn').forEach(btn => {
+                const rating = parseInt(btn.dataset.rating);
+                btn.textContent = rating <= selectedRating ? '⭐' : '☆';
+            });
+        }
+
+        // Initialize on DOM ready
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
